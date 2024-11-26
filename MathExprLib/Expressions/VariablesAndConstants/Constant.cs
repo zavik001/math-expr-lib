@@ -1,4 +1,4 @@
-using Expressions.Operations;
+using Expressions.Binary;
 using System.Collections.Generic;
 
 namespace Expressions.VariablesAndConstants
@@ -9,7 +9,14 @@ namespace Expressions.VariablesAndConstants
 
         public Constant(double value) => Value = value;
 
-        public override IEnumerable<string> Variables => new string[0];
+        public override IEnumerable<string> Variables
+        {
+            get
+            {
+                yield break;
+            }
+        }
+
         public override bool IsConstant => true;
         public override bool IsPolynomial => true;
         public override int PolynomialDegree => 0;

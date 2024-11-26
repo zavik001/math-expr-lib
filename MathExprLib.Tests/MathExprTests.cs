@@ -5,7 +5,8 @@ using FluentAssertions;
 using Expressions;
 using Expressions.Simplification;
 using Expressions.VariablesAndConstants;
-using Expressions.Operations;
+using Expressions.Unary;
+using Expressions.Binary;
 using static Expressions.MathExpr;
 
 namespace Expressions.Tests
@@ -59,10 +60,10 @@ namespace Expressions.Tests
             expr2.IsConstant.Should().BeTrue();
 
             // Проверка, является ли полиномом
-            expr2.IsPolynomial.Should().BeTrue();
+            expr2.IsPolynomial.Should().BeFalse();
 
             // Проверка степени полинома
-            expr2.PolynomialDegree.Should().Be(0);
+            expr2.PolynomialDegree.Should().Be(-1);
 
             // Проверка вычисления значения
             var variableValues = new Dictionary<string, double> { ["x"] = 1, ["y"] = 2 };
@@ -76,8 +77,8 @@ namespace Expressions.Tests
             var x = new Variable("x");
             var y = new Variable("y");
             var c = new Constant(3);
-            var expr3 = (Sin(x) + Cos(y)) * e(c) + Sqrt(10) + Tan(x) * c;
-            
+            var expr3 = (Sin(x) + Cos(y)) * Exp(c) + Sqrt(10) + Tan(x) * c;
+
             // Act & Assert
             // Проверка строки выражения
             expr3.ToString().Should().Contain("((((sin(x) + cos(y)) * exp(3)) + sqrt(10)) + (tan(x) * 3))");
@@ -89,10 +90,10 @@ namespace Expressions.Tests
             expr3.IsConstant.Should().BeFalse();
 
             // Проверка, является ли полиномом
-            expr3.IsPolynomial.Should().BeTrue();
+            expr3.IsPolynomial.Should().BeFalse();
 
             // Проверка степени полинома
-            expr3.PolynomialDegree.Should().Be(0);
+            expr3.PolynomialDegree.Should().Be(-1);
 
             // Проверка вычисления значения
             var variableValues = new Dictionary<string, double> { ["x"] = 1, ["y"] = 2 };
@@ -129,8 +130,8 @@ namespace Expressions.Tests
             expr4.Compute(variableValues).Should().BeApproximately(-5, 1e-5);
         }
 
-        [Fact] 
-        public void Expr5_ErrorTests() 
+        [Fact]
+        public void Expr5_ErrorTests()
         {
             // Arrange
             var x = new Variable("x");
@@ -176,6 +177,486 @@ namespace Expressions.Tests
             // Act & Assert
             // Проверка строки выражения
             expr6Simplified.ToString().Should().Be("(((1620 + (x / 10)) + 0,3) + 314165,98681391415)");
+        }
+
+        [Fact]
+        public void Expr8_Simplify_MultiplicationByZero()
+        {
+            // Arrange
+            var x = new Variable("x");
+            var expr = x * 0;
+
+            // Act
+            var simplifiedExpr = ExpressionSimplifier.Simplify(expr);
+
+            // Assert
+            simplifiedExpr.ToString().Should().Be("0"); // x * 0 должно быть упрощено до 0
+            simplifiedExpr.IsConstant.Should().BeTrue();
+            simplifiedExpr.Compute(new Dictionary<string, double>()).Should().Be(0);
+        }
+
+        [Fact]
+        public void Expr9_Simplify_AdditionWithZero()
+        {
+            // Arrange
+            var x = new Variable("x");
+            var expr = x + 0;
+
+            // Act
+            var simplifiedExpr = ExpressionSimplifier.Simplify(expr);
+
+            // Assert
+            simplifiedExpr.ToString().Should().Be("x");
+            simplifiedExpr.IsConstant.Should().BeFalse();
+            simplifiedExpr.Variables.Should().ContainSingle(v => v == "x");
+        }
+
+        [Fact]
+        public void Expr10_Simplify_ComplexExpression()
+        {
+            // Arrange
+            var x = new Variable("x");
+            var y = new Variable("y");
+            var expr = (x + 0) * (y + 1) - (y * 0);
+
+            // Act
+            var simplifiedExpr = ExpressionSimplifier.Simplify(expr);
+
+            // Assert
+            simplifiedExpr.ToString().Should().Be("(x * (y + 1))");
+        }
+
+        [Fact]
+        public void Expr11_Simplify_DivisionByOne()
+        {
+            // Arrange
+            var x = new Variable("x");
+            var expr = x / 1;
+
+            // Act
+            var simplifiedExpr = ExpressionSimplifier.Simplify(expr);
+
+            // Assert
+            simplifiedExpr.ToString().Should().Be("x");
+        }
+
+        [Fact]
+        public void Expr12_Simplify_ExpressionWithTrigonometry()
+        {
+            // Arrange
+            var c = new Constant(0);
+            var expr = Sin(c) + Cos(c);
+
+            // Act
+            var simplifiedExpr = ExpressionSimplifier.Simplify(expr);
+
+            // Assert
+            simplifiedExpr.ToString().Should().Be("1");
+            simplifiedExpr.IsConstant.Should().BeTrue();
+            simplifiedExpr.Compute(new Dictionary<string, double>()).Should().Be(1);
+        }
+
+        [Fact]
+        public void Expr13_DivideOperation_Compute_ValidInputs_ReturnsCorrectResult()
+        {
+            // Arrange
+            var left = new Constant(10);
+            var right = new Constant(2);
+            var divide = new DivideOperation(left, right);
+
+            // Act
+            var result = divide.Compute(new Dictionary<string, double>());
+
+            // Assert
+            result.Should().Be(5);
+        }
+
+        [Fact]
+        public void Expr14_DivideOperation_Compute_DivideByZero_ThrowsException()
+        {
+            // Arrange
+            var left = new Constant(10);
+            var right = new Constant(0);
+            var divide = new DivideOperation(left, right);
+
+            // Act
+            Action act = () => divide.Compute(new Dictionary<string, double>());
+
+            // Assert
+            act.Should().Throw<DivideByZeroException>().WithMessage("Деление на ноль.");
+        }
+
+        [Fact]
+        public void Expr15_DivideOperation_IsPolynomial_ValidPolynomials_ReturnsTrue()
+        {
+            // Arrange
+            var x = new Variable("x");
+            var numerator = x * x * 2; // Полином 2x^2
+            var denominator = x;      // Полином x
+            var divide = new DivideOperation(numerator, denominator);
+
+            // Act
+            var isPolynomial = divide.IsPolynomial;
+
+            // Assert
+            isPolynomial.Should().BeTrue();
+        }
+
+        [Fact]
+        public void Expr16_DivideOperation_IsPolynomial_InvalidPolynomials_ReturnsFalse()
+        {
+            // Arrange
+            var x = new Variable("x");
+            var numerator = x * 2 + 3; // Полином 2x + 3
+            var denominator = x * x;  // Полином x^2
+            var divide = new DivideOperation(numerator, denominator);
+
+            // Act
+            var isPolynomial = divide.IsPolynomial;
+
+            // Assert
+            isPolynomial.Should().BeFalse();
+        }
+
+        [Fact]
+        public void Expr17_DivideOperation_PolynomialDegree_ValidPolynomials_ReturnsDegreeDifference()
+        {
+            // Arrange
+            var x = new Variable("x");
+            var numerator = x * x * 3; // Полином 3x^2
+            var denominator = x;      // Полином x
+            var divide = new DivideOperation(numerator, denominator);
+
+            // Act
+            var degree = divide.PolynomialDegree;
+
+            // Assert
+            degree.Should().Be(1); // Разница степеней 2 - 1 = 1
+        }
+
+        [Fact]
+        public void Expr18_DivideOperation_PolynomialDegree_InvalidPolynomials_ReturnsNegativeOne()
+        {
+            // Arrange
+            var x = new Variable("x");
+            var numerator = x + 1;    // Полином x + 1
+            var denominator = x * x; // Полином x^2
+            var divide = new DivideOperation(numerator, denominator);
+
+            // Act
+            var degree = divide.PolynomialDegree;
+
+            // Assert
+            degree.Should().Be(-1);
+        }
+
+        [Fact]
+        public void Expr19_DivideOperation_IsConstant_ValidConstants_ReturnsTrue()
+        {
+            // Arrange
+            var left = new Constant(10);
+            var right = new Constant(2);
+            var divide = new DivideOperation(left, right);
+
+            // Act
+            var isConstant = divide.IsConstant;
+
+            // Assert
+            isConstant.Should().BeTrue();
+        }
+
+        [Fact]
+        public void Expr20_DivideOperation_IsConstant_WithVariable_ReturnsFalse()
+        {
+            // Arrange
+            var x = new Variable("x");
+            var left = new Constant(10);
+            var divide = new DivideOperation(left, x);
+
+            // Act
+            var isConstant = divide.IsConstant;
+
+            // Assert
+            isConstant.Should().BeFalse();
+        }
+
+        [Fact]
+        public void Expr21_DivideOperation_ToString_ReturnsCorrectFormat()
+        {
+            // Arrange
+            var x = new Variable("x");
+            var y = new Variable("y");
+            var divide = new DivideOperation(x, y);
+
+            // Act
+            var result = divide.ToString();
+
+            // Assert
+            result.Should().Be("(x / y)");
+        }
+
+        [Fact]
+        public void Expr22_ConstantExpressionTests()
+        {
+            // Arrange
+            var c = new Constant(42);
+
+            // Act & Assert
+            c.ToString().Should().Be("42");
+            c.IsConstant.Should().BeTrue();
+            c.Variables.Should().BeEmpty();
+            c.Compute(new Dictionary<string, double>()).Should().Be(42);
+        }
+
+        [Fact]
+        public void Expr23_NegativeVariableTests()
+        {
+            // Arrange
+            var x = new Variable("x");
+            var expr = -x;
+
+            // Act & Assert
+            expr.ToString().Should().Be("-(x)");
+            expr.IsConstant.Should().BeFalse();
+            expr.Variables.Should().BeEquivalentTo(new[] { "x" });
+            expr.PolynomialDegree.Should().Be(1);
+
+            var variableValues = new Dictionary<string, double> { ["x"] = -3 };
+            expr.Compute(variableValues).Should().Be(3);
+        }
+
+        [Fact]
+        public void Expr24_MixedOperationsTests()
+        {
+            // Arrange
+            var x = new Variable("x");
+            var y = new Variable("y");
+            var expr = (x + 2) / (y - 3);
+
+            // Act & Assert
+            expr.ToString().Should().Be("((x + 2) / (y - 3))");
+            expr.IsConstant.Should().BeFalse();
+            expr.Variables.Should().BeEquivalentTo(new[] { "x", "y" });
+        }
+
+        [Fact]
+        public void Expr25_ExponentialTests()
+        {
+            // Arrange
+            var x = new Variable("x");
+            var expr = Exp(x);
+
+            // Act & Assert
+            expr.ToString().Should().Be("exp(x)");
+            expr.IsPolynomial.Should().BeFalse();
+            expr.PolynomialDegree.Should().Be(-1);
+
+            var variableValues = new Dictionary<string, double> { ["x"] = 1 };
+            expr.Compute(variableValues).Should().BeApproximately(Math.E, 1e-5);
+        }
+
+        [Fact]
+        public void Expr26_TrigSimplificationTests()
+        {
+            // Arrange
+            var x = new Variable("x");
+            var expr = Sin(x) * Cos(x);
+
+            // Act
+            var simplified = ExpressionSimplifier.Simplify(expr);
+
+            // Assert
+            simplified.ToString().Should().Be("(sin(x) * cos(x))");
+        }
+
+        [Fact]
+        public void Expr27_SquareRootTests()
+        {
+            // Arrange
+            var x = new Variable("x");
+            var expr = Sqrt(x);
+
+            // Act & Assert
+            expr.ToString().Should().Be("sqrt(x)");
+            expr.IsPolynomial.Should().BeFalse();
+
+            var variableValues = new Dictionary<string, double> { ["x"] = 4 };
+            expr.Compute(variableValues).Should().Be(2);
+        }
+
+        [Fact]
+        public void Expr28_LogarithmicExpressionTests()
+        {
+            // Arrange
+            var x = new Variable("x");
+            var expr = Log(10, x);
+
+            // Act & Assert
+            expr.ToString().Should().Be("log_10(x)");
+            expr.IsPolynomial.Should().BeTrue();
+
+            var variableValues = new Dictionary<string, double> { ["x"] = 100 };
+            expr.Compute(variableValues).Should().BeApproximately(2, 1e-5);
+        }
+
+        [Fact]
+        public void Expr29_ZeroMultiplicationTests()
+        {
+            // Arrange
+            var x = new Variable("x");
+            var expr = x * 0;
+
+            // Act
+            var simplified = ExpressionSimplifier.Simplify(expr);
+
+            // Assert
+            simplified.ToString().Should().Be("0");
+            simplified.IsConstant.Should().BeTrue();
+        }
+
+        [Fact]
+        public void Expr30_ComplexExpressionTests()
+        {
+            // Arrange
+            var x = new Variable("x");
+            var y = new Variable("y");
+            var expr = (x + y) * (x - y);
+
+            // Act
+            var simplified = ExpressionSimplifier.Simplify(expr);
+
+            // Assert
+            simplified.ToString().Should().Be("((x + y) * (x - y))");
+        }
+
+        [Fact]
+        public void Expr31_DivisionByConstantTests()
+        {
+            // Arrange
+            var x = new Variable("x");
+            var expr = x / 4;
+
+            // Act & Assert
+            expr.ToString().Should().Be("(x / 4)");
+            expr.IsConstant.Should().BeFalse();
+
+            var variableValues = new Dictionary<string, double> { ["x"] = 8 };
+            expr.Compute(variableValues).Should().Be(2);
+        }
+
+        [Fact]
+        public void Expr32_ValidLogarithmTests()
+        {
+            // Arrange
+            var expr = MathExpr.Log(2, 8);
+
+            // Act & Assert
+            expr.Compute(new Dictionary<string, double>()).Should().Be(3, "log base 2 of 8 equals 3");
+            expr.ToString().Should().Be("log_2(8)");
+        }
+
+        [Fact]
+        public void Expr33_LogarithmWithInvalidBaseTests()
+        {
+            // Arrange
+            var expr = MathExpr.Log(-2, 8);
+
+            // Act
+            Action compute = () => expr.Compute(new Dictionary<string, double>());
+
+            // Assert
+            compute.Should().Throw<ArgumentException>()
+                .WithMessage("Основание логарифма должно быть положительным и не равно 1.");
+        }
+
+        [Fact]
+        public void Expr34_LogarithmWithInvalidArgumentTests()
+        {
+            // Arrange
+            var expr = MathExpr.Log(2, -8);
+
+            // Act
+            Action compute = () => expr.Compute(new Dictionary<string, double>());
+
+            // Assert
+            compute.Should().Throw<ArgumentException>()
+                .WithMessage("Аргумент логарифма должен быть положительным.");
+        }
+
+        [Fact]
+        public void Expr35_ValidSqrtTests()
+        {
+            // Arrange
+            var expr = MathExpr.Sqrt(16);
+
+            // Act & Assert
+            expr.Compute(new Dictionary<string, double>()).Should().Be(4, "sqrt(16) equals 4");
+            expr.ToString().Should().Be("sqrt(16)");
+        }
+
+        [Fact]
+        public void Expr36_SqrtWithNegativeArgumentTests()
+        {
+            // Arrange
+            var expr = MathExpr.Sqrt(-9);
+
+            // Act
+            Action compute = () => expr.Compute(new Dictionary<string, double>());
+
+            // Assert
+            compute.Should().Throw<ArgumentException>()
+                .WithMessage("Квадратный корень из отрицательного числа не существует.");
+        }
+
+        [Fact]
+        public void Expr37_CombinedExpressionTests()
+        {
+            // Arrange
+            var expr = MathExpr.Sqrt(MathExpr.Log(2, 8));
+
+            // Act
+            var result = expr.Compute(new Dictionary<string, double>());
+
+            // Assert
+            result.Should().Be(Math.Sqrt(3), "sqrt(log_2(8)) equals sqrt(3)");
+            expr.ToString().Should().Be("sqrt(log_2(8))");
+        }
+
+        [Fact]
+        public void Expr38_ValidPolynomialPowerTests()
+        {
+            // Arrange
+            var x = new Variable("x");
+            var expr = MathExpr.Pow(x, 3);
+
+            // Act & Assert
+            expr.IsPolynomial.Should().BeTrue();
+            expr.PolynomialDegree.Should().Be(3);
+            expr.ToString().Should().Be("(x ^ 3)");
+        }
+
+        [Fact]
+        public void Expr39_InvalidPolynomialPowerTests()
+        {
+            // Arrange
+            var x = new Variable("x");
+            var expr = MathExpr.Pow(x, 1.5);
+
+            // Act & Assert
+            expr.IsPolynomial.Should().BeFalse();
+            expr.PolynomialDegree.Should().Be(-1);
+        }
+
+        [Fact]
+        public void Expr40_NegativeExponentTests()
+        {
+            // Arrange
+            var x = new Variable("x");
+            var expr = MathExpr.Pow(x, -2);
+
+            // Act & Assert
+            expr.IsPolynomial.Should().BeFalse();
+            expr.PolynomialDegree.Should().Be(-1);
         }
     }
 }

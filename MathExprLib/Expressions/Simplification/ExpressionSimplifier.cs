@@ -1,7 +1,8 @@
 using System;
 using System.Collections.Generic;
 using Expressions;
-using Expressions.Operations;
+using Expressions.Binary;
+using Expressions.Unary;
 using Expressions.VariablesAndConstants;
 
 namespace Expressions.Simplification
@@ -10,60 +11,91 @@ namespace Expressions.Simplification
     {
         public static ExprBase Simplify(ExprBase expression)
         {
-            if (expression is Constant constant)
+            return expression switch
             {
-                return constant;
-            }
+                Constant constant => constant,
 
-            if (expression is BinaryOperation binaryOperation)
-            {
-                var left = Simplify((ExprBase)binaryOperation.Left);
-                var right = Simplify((ExprBase)binaryOperation.Right);
+                BinaryOperation binaryOperation => SimplifyBinary(binaryOperation),
 
-                if (left is Constant leftConst && right is Constant rightConst)
-                {
+                UnaryOperation unaryOperation => SimplifyUnary(unaryOperation),
 
-                    return new Constant(binaryOperation.Compute(new Dictionary<string, double>()));
-                }
-
-                if (binaryOperation is MultiplyOperation)
-                {
-                    if (left is Constant l && l.Value == 1) return right;
-                    if (right is Constant r && r.Value == 1) return left;
-                    if (left is Constant lZero && lZero.Value == 0 || right is Constant rZero && rZero.Value == 0) return new Constant(0);
-                }
-                else if (binaryOperation is AddOperation)
-                {
-                    if (left is Constant l && l.Value == 0) return right;
-                    if (right is Constant r && r.Value == 0) return left;
-                }
-                else if (binaryOperation is SubtractOperation)
-                {
-                    if (right is Constant r && r.Value == 0) return left;
-                }
-                else if (binaryOperation is DivideOperation)
-                {
-                    if (right is Constant r && r.Value == 1) return left;
-                }
-
-                var result = Activator.CreateInstance(binaryOperation.GetType(), left, right) as ExprBase;
-                return result ?? expression;
-            }
-
-            if (expression is UnaryOperation unaryOperation)
-            {
-                var operand = Simplify((ExprBase)unaryOperation.Operand);
-
-                if (operand is Constant constantOperand)
-                {
-                    return new Constant(unaryOperation.Compute(new Dictionary<string, double>()));
-                }
-
-                var simplifiedUnary = Activator.CreateInstance(unaryOperation.GetType(), operand) as ExprBase;
-                return simplifiedUnary ?? expression;
-            }
-
-            return expression;
+                _ => expression
+            };
         }
+
+        private static ExprBase SimplifyBinary(BinaryOperation binaryOperation)
+        {
+            var left = Simplify((ExprBase)binaryOperation.Left);
+            var right = Simplify((ExprBase)binaryOperation.Right);
+
+            // Если оба операнда константы, возвращаем вычисленный результат
+            if (left is Constant leftConst && right is Constant rightConst)
+            {
+                return new Constant(binaryOperation.Compute(new Dictionary<string, double>()));
+            }
+
+            return binaryOperation switch
+            {
+                MultiplyOperation => SimplifyMultiply(left, right),
+                AddOperation => SimplifyAdd(left, right),
+                SubtractOperation => SimplifySubtract(left, right),
+                DivideOperation => SimplifyDivide(left, right),
+                _ => CreateBinary(binaryOperation, left, right)
+            };
+        }
+
+        private static ExprBase SimplifyMultiply(ExprBase left, ExprBase right) =>
+            (left, right) switch
+            {
+                (Constant { Value: 1 }, var nonConst) => nonConst,        // 1 * x = x
+                (var nonConst, Constant { Value: 1 }) => nonConst,        // x * 1 = x
+                (Constant { Value: 0 }, _) => new Constant(0),            // 0 * x = 0
+                (_, Constant { Value: 0 }) => new Constant(0),            // x * 0 = 0
+                _ => CreateBinaryOperation<MultiplyOperation>(left, right)
+            };
+
+        private static ExprBase SimplifyAdd(ExprBase left, ExprBase right) =>
+            (left, right) switch
+            {
+                (Constant { Value: 0 }, var nonConst) => nonConst,        // 0 + x = x
+                (var nonConst, Constant { Value: 0 }) => nonConst,        // x + 0 = x
+                _ => CreateBinaryOperation<AddOperation>(left, right)
+            };
+
+        private static ExprBase SimplifySubtract(ExprBase left, ExprBase right) =>
+            right switch
+            {
+                Constant { Value: 0 } => left,                            // x - 0 = x
+                _ => CreateBinaryOperation<SubtractOperation>(left, right)
+            };
+
+        private static ExprBase SimplifyDivide(ExprBase left, ExprBase right) =>
+            right switch
+            {
+                Constant { Value: 1 } => left,                            // x / 1 = x
+                _ => CreateBinaryOperation<DivideOperation>(left, right)
+            };
+
+        private static ExprBase SimplifyUnary(UnaryOperation unaryOperation)
+        {
+            var operand = Simplify((ExprBase)unaryOperation.Operand);
+
+            // Если операнд — константа, вычисляем результат
+            if (operand is Constant constantOperand)
+            {
+                return new Constant(unaryOperation.Compute(new Dictionary<string, double>()));
+            }
+
+            return CreateUnaryOperation(unaryOperation.GetType(), operand);
+        }
+
+        private static ExprBase CreateBinary(BinaryOperation binaryOperation, ExprBase left, ExprBase right) =>
+            Activator.CreateInstance(binaryOperation.GetType(), left, right) as ExprBase ?? binaryOperation;
+
+        private static ExprBase CreateBinaryOperation<T>(ExprBase left, ExprBase right) where T : BinaryOperation =>
+            Activator.CreateInstance(typeof(T), left, right) as ExprBase ?? throw new InvalidOperationException();
+
+        private static ExprBase CreateUnaryOperation(Type operationType, ExprBase operand) =>
+            Activator.CreateInstance(operationType, operand) as ExprBase ?? throw new InvalidOperationException();
     }
 }
