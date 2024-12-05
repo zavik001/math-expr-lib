@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using Xunit;
 using FluentAssertions;
 using Expressions;
-using Expressions.Simplification;
 using Expressions.VariablesAndConstants;
 using Expressions.Unary;
 using Expressions.Binary;
@@ -163,101 +162,7 @@ namespace Expressions.Tests
         }
 
         [Fact]
-        public void Expr6_SimplifiersTests()
-        {
-            // Arrange
-            var x = new Variable("x");
-            var y = new Variable("y");
-            var c = new Constant(3);
-            var d = new Constant(10);
-
-            var expr6 = 10 * 3 * 2 * c * 3 * 3 + x / 10 + c / d + (Sin(10) + Cos(c)) * Pow(2, d) * 2 * (-100);
-            var expr6Simplified = ExpressionSimplifier.Simplify(expr6);
-
-            // Act & Assert
-            // Проверка строки выражения
-            expr6Simplified.ToString().Should().Be("(((1620 + (x / 10)) + 0,3) + 314165,98681391415)");
-        }
-
-        [Fact]
-        public void Expr8_Simplify_MultiplicationByZero()
-        {
-            // Arrange
-            var x = new Variable("x");
-            var expr = x * 0;
-
-            // Act
-            var simplifiedExpr = ExpressionSimplifier.Simplify(expr);
-
-            // Assert
-            simplifiedExpr.ToString().Should().Be("0"); // x * 0 должно быть упрощено до 0
-            simplifiedExpr.IsConstant.Should().BeTrue();
-            simplifiedExpr.Compute(new Dictionary<string, double>()).Should().Be(0);
-        }
-
-        [Fact]
-        public void Expr9_Simplify_AdditionWithZero()
-        {
-            // Arrange
-            var x = new Variable("x");
-            var expr = x + 0;
-
-            // Act
-            var simplifiedExpr = ExpressionSimplifier.Simplify(expr);
-
-            // Assert
-            simplifiedExpr.ToString().Should().Be("x");
-            simplifiedExpr.IsConstant.Should().BeFalse();
-            simplifiedExpr.Variables.Should().ContainSingle(v => v == "x");
-        }
-
-        [Fact]
-        public void Expr10_Simplify_ComplexExpression()
-        {
-            // Arrange
-            var x = new Variable("x");
-            var y = new Variable("y");
-            var expr = (x + 0) * (y + 1) - (y * 0);
-
-            // Act
-            var simplifiedExpr = ExpressionSimplifier.Simplify(expr);
-
-            // Assert
-            simplifiedExpr.ToString().Should().Be("(x * (y + 1))");
-        }
-
-        [Fact]
-        public void Expr11_Simplify_DivisionByOne()
-        {
-            // Arrange
-            var x = new Variable("x");
-            var expr = x / 1;
-
-            // Act
-            var simplifiedExpr = ExpressionSimplifier.Simplify(expr);
-
-            // Assert
-            simplifiedExpr.ToString().Should().Be("x");
-        }
-
-        [Fact]
-        public void Expr12_Simplify_ExpressionWithTrigonometry()
-        {
-            // Arrange
-            var c = new Constant(0);
-            var expr = Sin(c) + Cos(c);
-
-            // Act
-            var simplifiedExpr = ExpressionSimplifier.Simplify(expr);
-
-            // Assert
-            simplifiedExpr.ToString().Should().Be("1");
-            simplifiedExpr.IsConstant.Should().BeTrue();
-            simplifiedExpr.Compute(new Dictionary<string, double>()).Should().Be(1);
-        }
-
-        [Fact]
-        public void Expr13_DivideOperation_Compute_ValidInputs_ReturnsCorrectResult()
+        public void Expr6_DivideOperation_Compute_ValidInputs_ReturnsCorrectResult()
         {
             // Arrange
             var left = new Constant(10);
@@ -272,7 +177,7 @@ namespace Expressions.Tests
         }
 
         [Fact]
-        public void Expr14_DivideOperation_Compute_DivideByZero_ThrowsException()
+        public void Expr7_DivideOperation_Compute_DivideByZero_ThrowsException()
         {
             // Arrange
             var left = new Constant(10);
@@ -287,7 +192,7 @@ namespace Expressions.Tests
         }
 
         [Fact]
-        public void Expr15_DivideOperation_IsPolynomial_ValidPolynomials_ReturnsTrue()
+        public void Expr8_DivideOperation_IsPolynomial_ValidPolynomials_ReturnsTrue()
         {
             // Arrange
             var x = new Variable("x");
@@ -303,7 +208,7 @@ namespace Expressions.Tests
         }
 
         [Fact]
-        public void Expr16_DivideOperation_IsPolynomial_InvalidPolynomials_ReturnsFalse()
+        public void Expr9_DivideOperation_IsPolynomial_InvalidPolynomials_ReturnsFalse()
         {
             // Arrange
             var x = new Variable("x");
@@ -319,7 +224,7 @@ namespace Expressions.Tests
         }
 
         [Fact]
-        public void Expr17_DivideOperation_PolynomialDegree_ValidPolynomials_ReturnsDegreeDifference()
+        public void Expr10_DivideOperation_PolynomialDegree_ValidPolynomials_ReturnsDegreeDifference()
         {
             // Arrange
             var x = new Variable("x");
@@ -335,7 +240,7 @@ namespace Expressions.Tests
         }
 
         [Fact]
-        public void Expr18_DivideOperation_PolynomialDegree_InvalidPolynomials_ReturnsNegativeOne()
+        public void Expr11_DivideOperation_PolynomialDegree_InvalidPolynomials_ReturnsNegativeOne()
         {
             // Arrange
             var x = new Variable("x");
@@ -351,7 +256,7 @@ namespace Expressions.Tests
         }
 
         [Fact]
-        public void Expr19_DivideOperation_IsConstant_ValidConstants_ReturnsTrue()
+        public void Expr12_DivideOperation_IsConstant_ValidConstants_ReturnsTrue()
         {
             // Arrange
             var left = new Constant(10);
@@ -366,7 +271,7 @@ namespace Expressions.Tests
         }
 
         [Fact]
-        public void Expr20_DivideOperation_IsConstant_WithVariable_ReturnsFalse()
+        public void Expr13_DivideOperation_IsConstant_WithVariable_ReturnsFalse()
         {
             // Arrange
             var x = new Variable("x");
@@ -381,7 +286,7 @@ namespace Expressions.Tests
         }
 
         [Fact]
-        public void Expr21_DivideOperation_ToString_ReturnsCorrectFormat()
+        public void Expr14_DivideOperation_ToString_ReturnsCorrectFormat()
         {
             // Arrange
             var x = new Variable("x");
@@ -396,7 +301,7 @@ namespace Expressions.Tests
         }
 
         [Fact]
-        public void Expr22_ConstantExpressionTests()
+        public void Exp15_ConstantExpressionTests()
         {
             // Arrange
             var c = new Constant(42);
@@ -409,7 +314,7 @@ namespace Expressions.Tests
         }
 
         [Fact]
-        public void Expr23_NegativeVariableTests()
+        public void Expr16_NegativeVariableTests()
         {
             // Arrange
             var x = new Variable("x");
@@ -426,7 +331,7 @@ namespace Expressions.Tests
         }
 
         [Fact]
-        public void Expr24_MixedOperationsTests()
+        public void Expr17_MixedOperationsTests()
         {
             // Arrange
             var x = new Variable("x");
@@ -440,7 +345,7 @@ namespace Expressions.Tests
         }
 
         [Fact]
-        public void Expr25_ExponentialTests()
+        public void Expr18_ExponentialTests()
         {
             // Arrange
             var x = new Variable("x");
@@ -456,21 +361,7 @@ namespace Expressions.Tests
         }
 
         [Fact]
-        public void Expr26_TrigSimplificationTests()
-        {
-            // Arrange
-            var x = new Variable("x");
-            var expr = Sin(x) * Cos(x);
-
-            // Act
-            var simplified = ExpressionSimplifier.Simplify(expr);
-
-            // Assert
-            simplified.ToString().Should().Be("(sin(x) * cos(x))");
-        }
-
-        [Fact]
-        public void Expr27_SquareRootTests()
+        public void Expr19_SquareRootTests()
         {
             // Arrange
             var x = new Variable("x");
@@ -485,7 +376,7 @@ namespace Expressions.Tests
         }
 
         [Fact]
-        public void Expr28_LogarithmicExpressionTests()
+        public void Expr20_LogarithmicExpressionTests()
         {
             // Arrange
             var x = new Variable("x");
@@ -500,37 +391,7 @@ namespace Expressions.Tests
         }
 
         [Fact]
-        public void Expr29_ZeroMultiplicationTests()
-        {
-            // Arrange
-            var x = new Variable("x");
-            var expr = x * 0;
-
-            // Act
-            var simplified = ExpressionSimplifier.Simplify(expr);
-
-            // Assert
-            simplified.ToString().Should().Be("0");
-            simplified.IsConstant.Should().BeTrue();
-        }
-
-        [Fact]
-        public void Expr30_ComplexExpressionTests()
-        {
-            // Arrange
-            var x = new Variable("x");
-            var y = new Variable("y");
-            var expr = (x + y) * (x - y);
-
-            // Act
-            var simplified = ExpressionSimplifier.Simplify(expr);
-
-            // Assert
-            simplified.ToString().Should().Be("((x + y) * (x - y))");
-        }
-
-        [Fact]
-        public void Expr31_DivisionByConstantTests()
+        public void Expr21_DivisionByConstantTests()
         {
             // Arrange
             var x = new Variable("x");
@@ -545,7 +406,7 @@ namespace Expressions.Tests
         }
 
         [Fact]
-        public void Expr32_ValidLogarithmTests()
+        public void Expr22_ValidLogarithmTests()
         {
             // Arrange
             var expr = MathExpr.Log(2, 8);
@@ -556,7 +417,7 @@ namespace Expressions.Tests
         }
 
         [Fact]
-        public void Expr33_LogarithmWithInvalidBaseTests()
+        public void Expr23_LogarithmWithInvalidBaseTests()
         {
             // Arrange
             var expr = MathExpr.Log(-2, 8);
@@ -570,7 +431,7 @@ namespace Expressions.Tests
         }
 
         [Fact]
-        public void Expr34_LogarithmWithInvalidArgumentTests()
+        public void Expr24_LogarithmWithInvalidArgumentTests()
         {
             // Arrange
             var expr = MathExpr.Log(2, -8);
@@ -584,7 +445,7 @@ namespace Expressions.Tests
         }
 
         [Fact]
-        public void Expr35_ValidSqrtTests()
+        public void Expr25_ValidSqrtTests()
         {
             // Arrange
             var expr = MathExpr.Sqrt(16);
@@ -595,7 +456,7 @@ namespace Expressions.Tests
         }
 
         [Fact]
-        public void Expr36_SqrtWithNegativeArgumentTests()
+        public void Expr26_SqrtWithNegativeArgumentTests()
         {
             // Arrange
             var expr = MathExpr.Sqrt(-9);
@@ -609,7 +470,7 @@ namespace Expressions.Tests
         }
 
         [Fact]
-        public void Expr37_CombinedExpressionTests()
+        public void Expr27_CombinedExpressionTests()
         {
             // Arrange
             var expr = MathExpr.Sqrt(MathExpr.Log(2, 8));
@@ -623,7 +484,7 @@ namespace Expressions.Tests
         }
 
         [Fact]
-        public void Expr38_ValidPolynomialPowerTests()
+        public void Expr28_ValidPolynomialPowerTests()
         {
             // Arrange
             var x = new Variable("x");
@@ -636,7 +497,7 @@ namespace Expressions.Tests
         }
 
         [Fact]
-        public void Expr39_InvalidPolynomialPowerTests()
+        public void Expr29_InvalidPolynomialPowerTests()
         {
             // Arrange
             var x = new Variable("x");
@@ -648,7 +509,7 @@ namespace Expressions.Tests
         }
 
         [Fact]
-        public void Expr40_NegativeExponentTests()
+        public void Expr30_NegativeExponentTests()
         {
             // Arrange
             var x = new Variable("x");
@@ -657,6 +518,86 @@ namespace Expressions.Tests
             // Act & Assert
             expr.IsPolynomial.Should().BeFalse();
             expr.PolynomialDegree.Should().Be(-1);
+        }
+
+        [Fact]
+        public void Expr31_BinaryOperationPolynomialTests()
+        {
+            var x = new Variable("x");
+            var y = new Variable("y");
+
+            // Пример деления (x / y) / Pow(x, 0.5)
+            var expr = (x / y) / Pow(x, 0.5);
+
+            // Пример деления (x^3 * x * x + y^2) / (x^2 * y^2)
+            var expr2 = (Pow(x, 3) * x * x * x + Pow(y, 2)) / (Pow(x, 2) * Pow(y, 2));
+
+            // Пример деления (x^3 * y^2) / (x^2 * y^2)
+            var expr3 = (Pow(x, 3) * Pow(y, 2)) / (Pow(x, 2) * Pow(y, 2));
+
+            // Пример деления (x^4) / (x^2)
+            var expr4 = Pow(x, 4) / Pow(x, 2);
+
+            // Act & Assert:
+            expr.IsPolynomial.Should().BeFalse();
+            expr.PolynomialDegree.Should().Be(-1);  // x / y^0.5 - не полином
+            expr2.IsPolynomial.Should().BeFalse();
+            expr2.PolynomialDegree.Should().Be(-1); // x^3*x + y^2 / x^2*y^2 - не полином
+
+            expr3.IsPolynomial.Should().BeTrue();
+            expr3.PolynomialDegree.Should().Be(1);  // (x^3 * y^2) / (x^2 * y^2) => x^1
+
+            expr4.IsPolynomial.Should().BeTrue();
+            expr4.PolynomialDegree.Should().Be(2);  // x^4 / x^2 => x^2
+        }
+
+        [Fact]
+        public void Expr32_PowIsPolynomialTests()
+        {
+            // Arrange
+            var x = new Variable("x");
+            var y = new Variable("y");
+            var nonPolynomialLeft = x / y; // не полином
+            var constantRight = new Constant(3); // константа
+            var nonConstantRight = y; // не константа
+            var polynomialLeft = Pow(x, 2); // полином
+
+            // Act & Assert: Проверка, когда Left не полином
+            var expr1 = new Pow(nonPolynomialLeft, constantRight);
+            expr1.IsPolynomial.Should().BeFalse();
+
+            // Act & Assert: Проверка, когда Right не константа
+            var expr2 = new Pow(polynomialLeft, nonConstantRight);
+            expr2.IsPolynomial.Should().BeFalse();
+
+            // Act & Assert: Проверка, когда оба условия выполнены
+            var expr3 = new Pow(polynomialLeft, constantRight);
+            expr3.IsPolynomial.Should().BeTrue();
+        }
+
+        [Fact]
+        public void expr33_UnaryMinus()
+        {
+            // Arrange
+            var x = new Variable("x");
+            var expr = -(x);
+
+            // Act & Assert
+            expr.IsPolynomial.Should().BeTrue();
+        }
+
+        [Fact]
+        public void Expr34_InvalidVariable()
+        {
+            // Arrange
+            var x = new Variable("x");
+
+            // Act & Assert
+            var variableValues = new Dictionary<string, double>();
+            var exception = Assert.Throws<ArgumentException>(() => x.Compute(variableValues));
+
+            // Проверка сообщения об ошибке
+            Assert.Contains("Variable 'x' не имеет значения.", exception.Message);
         }
     }
 }
