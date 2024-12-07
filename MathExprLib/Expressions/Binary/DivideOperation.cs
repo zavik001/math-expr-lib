@@ -62,7 +62,7 @@ namespace Expressions.Binary
             // Проверяем делимость переменных
             foreach (var variable in denominatorPowers.Keys)
             {
-                if (!numeratorPowers.ContainsKey(variable) || 
+                if (!numeratorPowers.ContainsKey(variable) ||
                     numeratorPowers[variable] < denominatorPowers[variable])
                 {
                     return false;
@@ -90,9 +90,7 @@ namespace Expressions.Binary
 
                 foreach (var kvp in leftPowers)
                 {
-                    if (variablePowers.ContainsKey(kvp.Key))
-                        variablePowers[kvp.Key] += kvp.Value;
-                    else
+                    if (!variablePowers.ContainsKey(kvp.Key))
                         variablePowers[kvp.Key] = kvp.Value;
                 }
 
